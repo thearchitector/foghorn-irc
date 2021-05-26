@@ -22,9 +22,7 @@ jobs:
                   pip install poetry
                   poetry install --no-root --remove-untracked --no-ansi --no-interaction
             - name: Check formatting
-              run: |
-                  # stop the build if there are formatting errors
-                  poetry run black --check .
+              uses: psf/black@stable
             - name: Test with pytest
               run: |
                   poetry run pytest -vv tests

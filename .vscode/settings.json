@@ -12,5 +12,8 @@
     "python.analysis.useLibraryCodeForTypes": true,
     "python.analysis.memory.keepLibraryAst": true,
     "python.analysis.typeCheckingMode": "strict",
-    "python.formatting.provider": "black"
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.formatting.provider": "black",
 }
