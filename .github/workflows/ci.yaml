@@ -4,9 +4,10 @@ on: [push, pull_request]
 
 jobs:
     build:
-        runs-on: ubuntu-latest
+        runs-on: ${{ matrix.os }}
         strategy:
             matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
                 python-version: [3.7, 3.8, 3.9]
 
         steps:
@@ -23,7 +24,7 @@ jobs:
             - name: Check formatting
               run: |
                   # stop the build if there are formatting errors
-                  black --check .
+                  poetry run black --check .
             - name: Test with pytest
               run: |
-                  pytest -vv tests
+                  poetry run pytest -vv tests
