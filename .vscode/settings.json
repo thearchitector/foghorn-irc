@@ -1,0 +1,16 @@
+{
+    "editor.formatOnSave": true,
+    "files.eol": "\n",
+    "editor.tabSize": 4,
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 88,
+    // python typing, formatting and linting
+    "python.pythonPath": "${workspaceFolder}/.venv/Scripts/python",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/.venv/Lib/site-packages"
+    ],
+    "python.analysis.useLibraryCodeForTypes": true,
+    "python.analysis.memory.keepLibraryAst": true,
+    "python.analysis.typeCheckingMode": "strict",
+    "python.formatting.provider": "black"
+}
