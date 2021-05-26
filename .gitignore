@@ -1,0 +1,9 @@
+# environment settings
+.venv
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# caches
+.pytest_cache
+__pycache__
