@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "foghorn-irc"
+name = "foghorn"
 version = "0.1.0"
 description = "A quasi-compliant IRCv3 server written off Modern IRC."
 authors = ["Elias Gabriel <me@eliasfgabriel.com>"]
