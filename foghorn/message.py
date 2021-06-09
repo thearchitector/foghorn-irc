@@ -2,15 +2,20 @@ from dataclasses import dataclass
 from typing import Optional, Dict, List, Match
 import re
 
-from .standards import (
+from .parsing import (
     ATOM_DELIMITER,
     TAG_PREFIX,
+    MAX_MESSAGE_LENGTH,
+    MAX_TAGS_LENGTH,
     TAG_ESCAPE_MAPPING,
     TAG_ESCAPE_MAPPING_2,
     SOURCE_PREFIX,
     TRAILING_PARAM_PREFIX,
     TAG_UNESCAPE_MAPPING,
+    WILDCARD_ESCAPE_MAPPING,
 )
+from .numerics import ErrorCode
+from .errors import ProtocolException
 
 
 @dataclass(frozen=True)
@@ -57,13 +62,22 @@ class Message:
 
     @classmethod
     def from_line(cls, line: str):
-        # atoms = re.split(r" {1}", line)
         atoms = line.split(ATOM_DELIMITER)
 
         # tags are optional. if the first atom begins with '@', extract them
         tags = None
         if atoms[0].startswith(TAG_PREFIX):
+            # raise an error if we've exceeded the maximum number of bytes
+            # for the tag section
+            if len(atoms[0].encode("utf-8")) > MAX_TAGS_LENGTH - 1:
+                raise ProtocolException(ErrorCode.ERR_INPUTTOOLONG)
+
             tags, atoms = cls._tags_from_line(atoms[0][1:]), atoms[1:]
+
+        # raise an error if we've exceeded the maximum number of bytes
+        # for the remaining message
+        if len(ATOM_DELIMITER.join(atoms).encode("utf-8")) > MAX_MESSAGE_LENGTH:
+            raise ProtocolException(ErrorCode.ERR_INPUTTOOLONG)
 
         # source is optional. if the first (or second, depending on the inclusion
         # of tags) begins with ':', extract it
@@ -101,7 +115,7 @@ class Message:
             match = matchgroup.group(0)
             return TAG_UNESCAPE_MAPPING.get(match, match)
 
-        pattern = r"(?:.|\n|\r){1}"
+        pattern = re.compile(r".{1}", re.DOTALL)
         assignments = [
             k + (f"={re.sub(pattern, escape, self.tags[k])}" if self.tags[k] else "")
             for k in self.tags
@@ -138,3 +152,16 @@ class Message:
             )
 
         return ATOM_DELIMITER.join(atoms)
+
+    @staticmethod
+    def match_expression(pattern: str, candidates: List[str]) -> List[str]:
+        """
+        Matches the given wildcard expression against all candidates in the provided
+        list. Positive full matches are returned.
+        """
+        npattern = re.escape(pattern)
+        for unescaped, escaped in WILDCARD_ESCAPE_MAPPING.items():
+            npattern = npattern.replace(unescaped, escaped)
+
+        matcher = re.compile(npattern)
+        return [c for c in candidates if matcher.fullmatch(c)]

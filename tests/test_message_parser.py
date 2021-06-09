@@ -1,5 +1,5 @@
 import pytest
-from parser_tests.data import msg_split, msg_join
+from parser_tests.data import msg_split, msg_join, mask_match
 
 from foghorn.message import Message
 
@@ -7,7 +7,7 @@ from foghorn.message import Message
 @pytest.mark.parametrize(
     "line, atoms",
     [
-        pytest.param(test["input"], test["atoms"], id=test["input"])
+        pytest.param(test["input"], test["atoms"], id=f"\"{test['input']}\"")
         for test in msg_split["tests"]
     ],
 )
@@ -20,12 +20,26 @@ def test_msg_split(line, atoms):
 
 
 @pytest.mark.parametrize(
-    "atoms, line",
+    "line",
     [
-        pytest.param(test["atoms"], test["matches"][0], id=test["desc"])
+        pytest.param(test["matches"][0], id=f"\"{test['desc']}\"")
         for test in msg_join["tests"]
     ],
 )
-def test_msg_join(atoms, line):
-    print(atoms)
-    assert Message.from_line(line).to_line() == line
+def test_msg_join(line):
+    msg = Message.from_line(line)
+    assert msg.to_line() == line
+
+
+@pytest.mark.parametrize(
+    "mask,matches,fails",
+    [
+        pytest.param(
+            test["mask"], test["matches"], test["fails"], id=f"\"{test['mask']}\""
+        )
+        for test in mask_match["tests"]
+    ],
+)
+def test_mask_expression_match(mask, matches, fails):
+    candidates = matches + fails
+    assert Message.match_expression(mask, candidates) == matches

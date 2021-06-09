@@ -4,9 +4,11 @@ from collections import defaultdict
 from typing import DefaultDict
 from .typing import Socket, Address
 
-from .standards import IRC_PORT, DELIMITER, MAX_MESSAGE_LENGTH
+from .parsing import MSG_DELIMITER, MAX_MESSAGE_LENGTH, MAX_TAGS_LENGTH
 
 from .message import Message
+
+IRC_PORT = 6697
 
 
 class IRCServer(StreamServer):
@@ -15,13 +17,13 @@ class IRCServer(StreamServer):
 
         super().__init__((hostname, IRC_PORT), spawn=max_clients)
 
-    def handle(self, socket: Socket, address: Address) -> None:
+    def handle(self, socket: Socket, address: Address) -> None:  # pylint: disable=E0202
         buffer = self.buffer_map[address]
 
         while True:
             # read messages into the address's buffer until a delimiter is found
-            while DELIMITER not in buffer:
-                data = socket.recv(MAX_MESSAGE_LENGTH)
+            while MSG_DELIMITER not in buffer:
+                data = socket.recv(MAX_MESSAGE_LENGTH + MAX_TAGS_LENGTH)
 
                 # if the socket is closed
                 if not data:
@@ -31,7 +33,7 @@ class IRCServer(StreamServer):
 
             # messages may be incomplete, so ensure to save the remainder of the
             # buffer for the next parsing cycle
-            line, _, self.buffer_map[address] = buffer.partition(DELIMITER)
+            line, _, self.buffer_map[address] = buffer.partition(MSG_DELIMITER)
 
             try:
                 # redundant, but nice to be explicit about whats happening here
