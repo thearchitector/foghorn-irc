@@ -40,7 +40,6 @@ jobs:
                   pip install poetry
             - if: runner.os == 'macOS'
               run: |
-                  brew install openssl@1.1
                   export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib"
                   export CFLAGS="-I$(brew --prefix openssl@1.1)/include""
             - if: runner.os == 'Windows'
