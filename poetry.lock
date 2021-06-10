@@ -416,7 +416,7 @@ linting = []
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "4b791540f7f43be2f9adf4a7aa90608317ab40e12e9f60c0e1844a6c5182db44"
+content-hash = "57122a13b1bf61a732410ebb8f1b512f903bb972920e3fd964007bb51fc229ac"
 
 [metadata.files]
 appdirs = [
