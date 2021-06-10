@@ -46,8 +46,8 @@ jobs:
             - name: "[Windows] Install OpenSSL"
               if: runner.os == 'Windows' && matrix.python-version == 'pypy-3.7'
               run: |
-                  $env:LIB += ';C:\Program Files\OpenSSL'
-                  $env:INCLUDE += ';C:\Program Files\OpenSSL'
+                  [System.Environment]::SetEnvironmentVariable('LIB','C:\Program Files\OpenSSL')
+                  [System.Environment]::SetEnvironmentVariable('INCLUDE','C:\Program Files\OpenSSL')
             - name: Install dependencies
               if: steps.cache-deps.outputs.cache-hit != 'true'
               run: poetry install --remove-untracked --no-ansi --no-interaction
