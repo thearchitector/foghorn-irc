@@ -41,7 +41,7 @@ jobs:
             - if: runner.os == 'macOS'
               run: |
                   export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib"
-                  export CFLAGS="-I$(brew --prefix openssl@1.1)/include""
+                  export CFLAGS="-I$(brew --prefix openssl@1.1)/include"
             - if: runner.os == 'Windows'
               run: |
                   choco install openssl.light
