@@ -38,11 +38,11 @@ jobs:
             - run: |
                   python -m pip install --upgrade pip
                   pip install poetry
-            - if: steps.cache-deps.outputs.cache-hit != 'true' && runner.os == 'macOS' && matrix.python-version == 'pypy-3.7'
+            - if: runner.os == 'macOS' && matrix.python-version == 'pypy-3.7'
               run: |
                   export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib"
                   export CFLAGS="-I$(brew --prefix openssl@1.1)/include"
-            - if: steps.cache-deps.outputs.cache-hit != 'true' && runner.os == 'Windows' && matrix.python-version == 'pypy-3.7'
+            - if: runner.os == 'Windows' && matrix.python-version == 'pypy-3.7'
               run: |
                   choco install openssl.light
                   set LIB=C:\Program Files\OpenSSL;%LIB%
