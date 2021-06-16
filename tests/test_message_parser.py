@@ -1,5 +1,5 @@
 import pytest
-from parser_tests.data import msg_split, msg_join, mask_match
+from parser_tests.data import mask_match, msg_join, msg_split
 
 from foghorn.message import Message
 

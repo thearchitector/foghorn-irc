@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "ms-python.python",
-        "ms-pyright.pyright"
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode"
     ]
 }

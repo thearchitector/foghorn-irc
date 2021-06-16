@@ -8,11 +8,13 @@ jobs:
         steps:
             - uses: actions/checkout@v2
             - name: Lint Dockerfile
-              uses: brpaz/hadolint-action@master
+              uses: hadolint/hadolint-action@v1.5.0
               with:
                   dockerfile: "Dockerfile"
             - name: Check formatting
               uses: psf/black@stable
+            - name: Check typing
+              uses: jpetrucciani/mypy-check@master
 
     test:
         runs-on: ${{ matrix.os }}
