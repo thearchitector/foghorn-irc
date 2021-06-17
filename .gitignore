@@ -1,5 +1,4 @@
 # environment settings
-.venv
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
@@ -9,7 +8,9 @@
 !.vscode/bin/.keep
 
 # caches
+.venv
 .pytest_cache
+.mypy_cache
 __pycache__
 
 # builds
