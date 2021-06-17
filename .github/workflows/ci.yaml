@@ -5,6 +5,8 @@ on: [push, pull_request]
 jobs:
   lint:
     runs-on: ubuntu-latest
+    env:
+      MYPY_CACHE_DIR: ~/.cache/mypy
     steps:
       - uses: actions/checkout@v2
       - name: Lint Dockerfile
@@ -20,9 +22,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install mypy
-          mkdir -p ~/.mypy_cache
+          mkdir -p ${{ env.MYPY_CACHE_DIR }}
           mypy --install-types
-          mypy --pretty --cache-dir=~/.mypy_cache .
+          mypy --pretty .
 
   test:
     runs-on: ${{ matrix.os }}
