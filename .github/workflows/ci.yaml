@@ -16,11 +16,6 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.x"
-      - uses: actions/cache@v2
-        id: cache-deps
-        with:
-          path: ~/.mypy_cache
-          key: ${{ hashFiles('~/.mypy_cache/CACHEDIR.TAG') }}
       - name: Check typing
         run: |
           python -m pip install --upgrade pip
