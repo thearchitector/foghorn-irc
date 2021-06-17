@@ -22,7 +22,7 @@ jobs:
           pip install mypy
           mkdir -p ~/.mypy_cache
           mypy --install-types
-          mypy --pretty .
+          mypy --pretty --cache-dir=~/.mypy_cache .
 
   test:
     runs-on: ${{ matrix.os }}
