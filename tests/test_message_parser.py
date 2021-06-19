@@ -11,7 +11,7 @@ from foghorn.message import Message
         for test in msg_split["tests"]
     ],
 )
-def test_msg_split(line, atoms):
+def test_msg_split(mock_enum, line, atoms):
     msg = Message.from_line(line)
     assert msg.tags == atoms.get("tags")
     assert msg.source == atoms.get("source")
@@ -26,7 +26,7 @@ def test_msg_split(line, atoms):
         for test in msg_join["tests"]
     ],
 )
-def test_msg_join(line):
+def test_msg_join(mock_enum, line):
     msg = Message.from_line(line)
     assert msg.to_line() == line
 

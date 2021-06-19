@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .numerics import ErrorCode
+from .enums import ErrorCode
 
 
 @dataclass(frozen=True)
@@ -9,5 +9,6 @@ class ProtocolException(Exception):
 
     error_code: ErrorCode
 
+    @property
     def value(self):
         return self.error_code.value

@@ -1,14 +1,60 @@
 """
-Numerics sent from server to client in response to an parsed message, as
-defined in the specification.
-
-https://modern.ircdocs.horse/index.html#numerics
+Byte strings and numerics sent between server and client during message handling,
+as defined in the specification.
 """
-from enum import IntEnum, unique
+from enum import Enum, IntEnum, auto, unique
+
+
+# https://docs.python.org/3.7/library/enum.html#omitting-values
+class NoValue(Enum):
+    def __repr__(self):
+        return "<%s.%s>" % (self.__class__.__name__, self.name)
 
 
 @unique
+class Command(NoValue):
+    """All valid client and server commands defined by the protocol spec."""
+
+    # connection
+    CAP = auto()
+    AUTHENTICATE = auto()
+    PASS = auto()
+    NICK = auto()
+    USER = auto()
+    OPER = auto()
+    QUIT = auto()
+
+    # operators
+    JOIN = auto()
+    PART = auto()
+    TOPIC = auto()
+    NAMES = auto()
+    LIST = auto()
+
+    # server
+    MOTD = auto()
+    VERSION = auto()
+    ADMIN = auto()
+    CONNECT = auto()
+    TIME = auto()
+    STATS = auto()
+    INFO = auto()
+    MODE = auto()
+
+    # sending
+    PRIVMSG = auto()
+    NOTICE = auto()
+
+    # miscellaneous
+    USERHOST = auto()
+    KILL = auto()
+
+
+# https://modern.ircdocs.horse/index.html#rplwelcome-001
+@unique
 class ReplyCode(IntEnum):
+    """All reply numerics defined by the protocol spec."""
+
     RPL_WELCOME = 1
     RPL_YOURHOST = 2
     RPL_CREATED = 3
@@ -38,6 +84,7 @@ class ReplyCode(IntEnum):
 
     RPL_NONE = 300
     RPL_AWAY = 301
+
     RPL_USERHOST = 302
     RPL_ISON = 303
 
@@ -95,6 +142,7 @@ class ReplyCode(IntEnum):
     RPL_SASLMECHS = 908
 
 
+# https://modern.ircdocs.horse/index.html#errunknownerror-400
 @unique
 class ErrorCode(IntEnum):
     """All error status codes defined by the protocol spec."""
@@ -105,6 +153,8 @@ class ErrorCode(IntEnum):
     ERR_NOSUCHCHANNEL = 403
     ERR_CANNOTSENDTOCHAN = 404
     ERR_TOOMANYCHANNELS = 405
+
+    ERR_INVALIDCAPCMD = 410
 
     ERR_INPUTTOOLONG = 417
     ERR_UNKNOWNCOMMAND = 421

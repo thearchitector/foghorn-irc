@@ -1,27 +1,27 @@
-from dataclasses import dataclass
-from typing import Optional, Dict, List, Match
 import re
+from dataclasses import dataclass
+from typing import Dict, List, Match, Optional
 
+from .enums import Command, ErrorCode
+from .errors import ProtocolException
 from .parsing import (
     ATOM_DELIMITER,
-    TAG_PREFIX,
     MAX_MESSAGE_LENGTH,
     MAX_TAGS_LENGTH,
+    SOURCE_PREFIX,
     TAG_ESCAPE_MAPPING,
     TAG_ESCAPE_MAPPING_2,
-    SOURCE_PREFIX,
-    TRAILING_PARAM_PREFIX,
+    TAG_PREFIX,
     TAG_UNESCAPE_MAPPING,
+    TRAILING_PARAM_PREFIX,
     WILDCARD_ESCAPE_MAPPING,
 )
-from .numerics import ErrorCode
-from .errors import ProtocolException
 
 
 @dataclass(frozen=True)
 class Message:
     params: List[str]
-    verb: str
+    verb: Command
     source: Optional[str] = None
     tags: Optional[Dict[str, str]] = None
 
@@ -85,9 +85,14 @@ class Message:
         if atoms[0].startswith(SOURCE_PREFIX):
             source, atoms = atoms[0][1:], atoms[1:]
 
-        # the verb and params must the remaining atoms. the last parameter may contain
-        # spaces, so be sure to concatenate its atoms if indicated (prefixed by a ':').
-        verb, params = atoms[0], []
+        # the verb and params must the remaining atoms. check the verb to see if it
+        # is a valid command, or raise an error
+        if atoms[0] not in Command.__members__:
+            raise ProtocolException(ErrorCode.ERR_UNKNOWNCOMMAND)
+
+        # The last parameter may contain spaces, so be sure to concatenate its atoms
+        # if indicated (prefixed by a ':')
+        verb, params = Command[atoms[0]], []
         for i, p in enumerate(atoms[1:]):
             if p.startswith(TRAILING_PARAM_PREFIX):
                 params.append(ATOM_DELIMITER.join(atoms[1:][i:])[1:])

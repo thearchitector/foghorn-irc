@@ -1,5 +1,6 @@
-from typer import Typer
 from typing import Optional
+
+from typer import Typer
 
 app = Typer()
 
