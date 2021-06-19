@@ -23,7 +23,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install mypy
           mkdir -p ${{ env.MYPY_CACHE_DIR }}
-          yes | mypy --install-types --pretty .
+          yes | mypy --install-types
+          mypy --pretty .
 
   test:
     runs-on: ${{ matrix.os }}
