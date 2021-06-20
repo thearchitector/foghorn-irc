@@ -5,6 +5,8 @@ on: [push, pull_request]
 jobs:
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     env:
       MYPY_CACHE_DIR: ~/.cache/mypy
       POETRY_CACHE_DIR: ~/.cache/poetry
@@ -15,7 +17,7 @@ jobs:
           python-version: "3.7"
       - uses: abatilo/actions-poetry@v2.1.2
       - uses: actions/cache@v2
-        id: cache-deps
+        id: cache
         with:
           path: |
             ${{ env.MYPY_CACHE_DIR }}
@@ -23,9 +25,9 @@ jobs:
             .venv
           key: linting-poetry-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          poetry install -n -E linting --no-root
+          poetry install -n --no-root --no-dev -E linting
           poetry add types-redis
           yes 2>/dev/null | poetry run mypy --install-types
       - name: Check formatting
@@ -56,14 +58,14 @@ jobs:
           python-version: ${{ matrix.py-version }}
       - uses: abatilo/actions-poetry@v2.1.2
       - uses: actions/cache@v2
-        id: cache-deps
+        id: cache
         with:
           path: |
             ${{ env.POETRY_CACHE_DIR }}
             .venv
           key: ${{ runner.os }}_${{ matrix.py-version }}_${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         run: poetry install -n
       - name: Run tests
         run: poetry run pytest -vv tests
