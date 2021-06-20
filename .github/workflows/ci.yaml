@@ -27,12 +27,12 @@ jobs:
         run: |
           poetry install -n -E linting --no-root
           poetry add types-redis
+          yes 2>/dev/null | poetry run mypy --install-types
       - name: Check formatting
         run: poetry run black --check --diff .
       - name: Check typing
         run: |
           mkdir -p ${{ env.MYPY_CACHE_DIR }}
-          poetry run mypy --install-types
           poetry run mypy --pretty .
       - name: Check Dockerfile
         uses: hadolint/hadolint-action@v1.5.0
