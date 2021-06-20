@@ -24,13 +24,15 @@ jobs:
           key: linting-poetry-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: poetry install -n -E linting --no-root
+        run: |
+          poetry install -n -E linting --no-root
+          poetry add types-redis
       - name: Check formatting
         run: poetry run black --check --diff .
       - name: Check typing
         run: |
           mkdir -p ${{ env.MYPY_CACHE_DIR }}
-          yes | poetry run mypy --install-types
+          poetry run mypy --install-types
           poetry run mypy --pretty .
       - name: Check Dockerfile
         uses: hadolint/hadolint-action@v1.5.0
