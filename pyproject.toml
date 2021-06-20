@@ -13,13 +13,15 @@ cffi = "^1.14.5"
 redis = "^3.5.3"
 hiredis = "^2.0.0"
 
-[tool.poetry.dev-dependencies]
-irc-parser-tests = "^0.0.4"
-pytest = "^6.2.4"
+# linting deps (dev only)
 black = {version = "^21.5b1", optional = true}
 isort = {version = "^5.8.0", optional = true}
 flake8 = {version = "^3.9.2", optional = true}
 mypy = {version = "^0.902", optional = true}
+
+[tool.poetry.dev-dependencies]
+irc-parser-tests = "^0.0.4"
+pytest = "^6.2.4"
 
 [tool.poetry.extras]
 linting = ["black", "isort", "flake8", "mypy"]
