@@ -48,7 +48,7 @@ jobs:
       fail-fast: false
     env:
       POETRY_CACHE_DIR: ~/.cache/poetry
-    name: ${{ matrix.python-version }}
+    name: ${{ runner.os }}-${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
