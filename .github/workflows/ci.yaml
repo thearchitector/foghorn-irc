@@ -17,13 +17,13 @@ jobs:
         uses: psf/black@stable
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.x"
+          python-version: "3.7"
       - name: Check typing
         run: |
           python -m pip install --upgrade pip
           pip install mypy
           mkdir -p ${{ env.MYPY_CACHE_DIR }}
-          # mypy --install-types
+          mypy --install-types
           mypy --pretty .
 
   test:
