@@ -30,7 +30,7 @@ jobs:
       - name: Check typing
         run: |
           mkdir -p ${{ env.MYPY_CACHE_DIR }}
-          poetry run mypy --install-types
+          yes | poetry run mypy --install-types
           poetry run mypy --pretty .
       - name: Check Dockerfile
         uses: hadolint/hadolint-action@v1.5.0

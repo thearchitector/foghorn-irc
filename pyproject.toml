@@ -30,6 +30,7 @@ linting = ["black", "isort", "flake8", "mypy"]
 profile = "black"
 
 [tool.mypy]
+ignore_missing_imports = true
 warn_return_any = true
 show_column_numbers = true
 follow_imports = "silent"
