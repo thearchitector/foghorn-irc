@@ -6,13 +6,13 @@ from enum import Enum, IntEnum, auto, unique
 
 
 # https://docs.python.org/3.7/library/enum.html#omitting-values
-class NoValue(Enum):
+class NoValueEnum(Enum):
     def __repr__(self):
         return "<%s.%s>" % (self.__class__.__name__, self.name)
 
 
 @unique
-class Command(NoValue):
+class Command(NoValueEnum):
     """All valid client and server commands defined by the protocol spec."""
 
     # connection
@@ -199,3 +199,37 @@ class ErrorCode(IntEnum):
     ERR_SASLTOOLONG = 905
     ERR_SASLABORTED = 906
     ERR_SASLALREADY = 907
+
+
+@unique
+class CapCommand(Enum):
+    """Capability negotiation subcommands with expected parameters."""
+
+    LS = auto()
+    LIST = auto()
+    REQ = auto()
+    ACK = auto()
+    NAK = auto()
+    NEW = auto()
+    DEL = auto()
+    END = auto()
+
+
+@unique
+class ClientStatus(Enum):
+    UNREGISTERED = "unregistered"
+    NEGOTIATING = "negotiating"
+    REGISTERED = "registered"
+
+
+@unique
+class Capabilities(Enum):
+    """Implemented IRC v3 capabilities for this server. https://ircv3.net/irc/"""
+
+    MESSAGE_TAGS = "message-tags"
+    # TYPING = "typing"
+    # AWAY_NOTIFY = "away-notify"
+    # STRICT_TRANSPORT_SECURITY = "sts"
+    # BATCH = "batch"
+    # SERVER_TIME = "server-time"
+    # CHAT_HISTORY = "draft/chathistory"

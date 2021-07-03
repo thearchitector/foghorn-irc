@@ -1,16 +1,18 @@
 from itertools import zip_longest
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 from gevent.queue import LifoQueue
 from gevent.server import StreamServer
 from redis import BlockingConnectionPool, Redis
 
 from .commands import COMMANDS
+from .commands.cap import ClientStatus
 from .enums import ErrorCode
 from .errors import ProtocolException
 from .message import Message
 from .parsing import MAX_MESSAGE_LENGTH, MAX_TAGS_LENGTH, MSG_DELIMITER
 from .typing import Address, Socket
+from .utils import client_rkey
 
 IRC_PORT = 6697
 
@@ -28,17 +30,29 @@ class IRCServer(StreamServer):
     def handle(self, socket: Socket, address: Address) -> None:  # pylint: disable=E0202
         buffer = self._connection_buffer_map.get(address, b"")
 
+        # create an unregistered client for the new address
+        with Redis(connection_pool=self._redis_connection_pool) as redis:
+            redis.hset(client_rkey(address), "status", ClientStatus.UNREGISTERED.value)
+
         while True:
             # read messages into the address's buffer until a delimiter is found
             while MSG_DELIMITER not in buffer:
                 # closest power of 2
-                data = socket.recv(
-                    (MAX_MESSAGE_LENGTH + MAX_TAGS_LENGTH - 2).bit_length()
-                )
+                try:
+                    data = socket.recv(
+                        (MAX_MESSAGE_LENGTH + MAX_TAGS_LENGTH - 2).bit_length()
+                    )
+                finally:
+                    # if the socket is closed
+                    if not data:
+                        # delete all traces of the client
+                        with Redis(
+                            connection_pool=self._redis_connection_pool
+                        ) as redis:
+                            client_key = client_rkey(address)
+                            redis.delete(client_key)
 
-                # if the socket is closed
-                if not data:
-                    return
+                        return
 
                 # TODO: read atom sizes for compliance while reading buffer instead
                 # of decoding and re-encoding utf-8
@@ -65,20 +79,22 @@ class IRCServer(StreamServer):
                 # resp = err.response
                 pass
 
-            socket.sendall(resp.to_line().encode("utf-8"))
+            # send the response if exists, exhausting the entire bytestream
+            if resp:
+                socket.sendall(resp.to_line().encode("utf-8"))
 
-    def handle_message(self, socket: Socket, address: Address, line: str) -> Message:
+    def handle_message(
+        self, socket: Socket, address: Address, line: str
+    ) -> Optional[Message]:
         msg = Message.from_line(line)
         executor = COMMANDS[msg.verb]
 
         # attempt to cast all the given parameters to their expected types. most params
         # will remain strings and checked downstream, but this will raise any missing
-        # or
-        casted_params = []
+        casted_params = None
         if executor.required_params:
-            for transformer, given in zip_longest(
-                executor.required_params.values(), msg.params
-            ):
+            casted_params = []
+            for transformer, given in zip_longest(executor.required_params, msg.params):
                 # if the transfomer is None, we got more parameters than
                 # we expected
                 if not transformer:
@@ -112,21 +128,14 @@ class IRCServer(StreamServer):
             # check if the current command is required by the preceding one
             _check_context(COMMANDS[prev_msg.verb].required_post_context, msg.verb)
 
-        # if the executor creates a Redis session (the default unless specified)
-        redis = None
-        if executor.needs_redis:
-            redis = Redis(connection_pool=self._redis_connection_pool)
-
-        # actually process the incoming message and generate a response
-        response = executor.respond(
-            msg,
-            redis=redis,
-            prev_message=prev_msg,
-        )
+        with Redis(connection_pool=self._redis_connection_pool) as redis:
+            # actually process the incoming message and generate a response
+            response = executor.respond(
+                address, redis, msg, prev_message=prev_msg, casted_params=casted_params
+            )
 
         # save the incoming context if requested
         if executor.save_context:
             self._previous_messages[address] = msg
 
-        # send the response, exhausting the entire bytestream
         return response

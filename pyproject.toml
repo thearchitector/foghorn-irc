@@ -26,6 +26,9 @@ pytest = "^6.2.4"
 [tool.poetry.extras]
 linting = ["black", "isort", "flake8", "mypy"]
 
+[tool.poetry.scripts]
+foghorn = "foghorn.cli:app"
+
 [tool.isort]
 profile = "black"
 
