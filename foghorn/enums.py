@@ -4,6 +4,8 @@ as defined in the specification.
 """
 from enum import Enum, IntEnum, auto, unique
 
+from utils import typecaster
+
 
 # https://docs.python.org/3.7/library/enum.html#omitting-values
 class NoValueEnum(Enum):
@@ -201,18 +203,17 @@ class ErrorCode(IntEnum):
     ERR_SASLALREADY = 907
 
 
-@unique
-class CapCommand(Enum):
-    """Capability negotiation subcommands with expected parameters."""
+class CapSubCommand(Enum):
+    """Capability negotiation subcommands with their client-sent expected parameters."""
 
-    LS = auto()
-    LIST = auto()
-    REQ = auto()
-    ACK = auto()
-    NAK = auto()
-    NEW = auto()
-    DEL = auto()
-    END = auto()
+    LS = [typecaster(int)]
+    LIST = None
+    REQ = [typecaster(str, many=True)]
+    ACK = None
+    NAK = None
+    END = None
+    # NEW = None
+    # DEL = None
 
 
 @unique

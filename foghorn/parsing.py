@@ -19,3 +19,5 @@ SOURCE_PREFIX = ":"
 TRAILING_PARAM_PREFIX = ":"
 
 WILDCARD_ESCAPE_MAPPING = {r"\*": r"[^\\]*", r"\?": r"[^\\]{1}"}
+
+ANY_CLIENT = "*"

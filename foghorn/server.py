@@ -1,4 +1,3 @@
-from itertools import zip_longest
 from typing import Callable, Dict, Optional
 
 from gevent.queue import LifoQueue
@@ -12,7 +11,7 @@ from .errors import ProtocolException
 from .message import Message
 from .parsing import MAX_MESSAGE_LENGTH, MAX_TAGS_LENGTH, MSG_DELIMITER
 from .typing import Address, Socket
-from .utils import client_rkey
+from .utils import client_rkey, transform
 
 IRC_PORT = 6697
 
@@ -89,28 +88,12 @@ class IRCServer(StreamServer):
         msg = Message.from_line(line)
         executor = COMMANDS[msg.verb]
 
-        # attempt to cast all the given parameters to their expected types. most params
-        # will remain strings and checked downstream, but this will raise any missing
-        casted_params = None
-        if executor.required_params:
-            casted_params = []
-            for transformer, given in zip_longest(executor.required_params, msg.params):
-                # if the transfomer is None, we got more parameters than
-                # we expected
-                if not transformer:
-                    raise ProtocolException(ErrorCode.ERR_UNKNOWNERROR)
-
-                try:
-                    # all types except int and float will cast None to some value,
-                    # which is not the behavior we want
-                    if transformer != int and transformer != float and given is None:
-                        raise TypeError
-
-                    casted_params.append(transformer(given))
-                except (TypeError, ValueError):
-                    # something went wrong during transformation, so the param was
-                    # super invalid or missing when expected
-                    raise ProtocolException(ErrorCode.ERR_NEEDMOREPARAMS)
+        # attempt to cast all the given parameters to their expected types
+        casted_params = (
+            transform(executor.required_params, msg.params)
+            if executor.required_params
+            else None
+        )
 
         def _check_context(context, verb):
             # throw an unknown error (since no numeric is standardized) if the order of

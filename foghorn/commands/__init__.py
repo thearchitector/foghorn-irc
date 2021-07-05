@@ -1,6 +1,4 @@
 from ..enums import Command
-
-# from ..utils import typecaster
 from .cap import CapCommand
 
 COMMANDS = {
