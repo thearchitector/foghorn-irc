@@ -53,7 +53,7 @@ RUN poetry install --no-dev --no-root --remove-untracked
 
 ## copy everything else
 COPY . ./
-RUN poetry install --no-dev && \
+RUN poetry install && \
     poetry build --format wheel
 
 CMD [ "/bin/bash" ]

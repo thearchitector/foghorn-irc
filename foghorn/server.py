@@ -10,8 +10,9 @@ from .enums import ErrorCode
 from .errors import ProtocolException
 from .message import Message
 from .parsing import MAX_MESSAGE_LENGTH, MAX_TAGS_LENGTH, MSG_DELIMITER
+from .storage import CLIENT_STATUS_RKEY, client_rkey
 from .typing import Address, Socket
-from .utils import client_rkey, transform
+from .utils import transform
 
 IRC_PORT = 6697
 
@@ -31,7 +32,11 @@ class IRCServer(StreamServer):
 
         # create an unregistered client for the new address
         with Redis(connection_pool=self._redis_connection_pool) as redis:
-            redis.hset(client_rkey(address), "status", ClientStatus.UNREGISTERED.value)
+            redis.hset(
+                client_rkey(address),
+                CLIENT_STATUS_RKEY,
+                ClientStatus.UNREGISTERED.value,
+            )
 
         while True:
             # read messages into the address's buffer until a delimiter is found
@@ -75,8 +80,7 @@ class IRCServer(StreamServer):
                 continue
             except ProtocolException as err:
                 # if a protocol exception happened, send back the error numeric
-                # resp = err.response
-                pass
+                resp = Message(verb=err.numeric, params=err.params + [err.msg])
 
             # send the response if exists, exhausting the entire bytestream
             if resp:
@@ -114,7 +118,7 @@ class IRCServer(StreamServer):
         with Redis(connection_pool=self._redis_connection_pool) as redis:
             # actually process the incoming message and generate a response
             response = executor.respond(
-                address, redis, msg, prev_message=prev_msg, casted_params=casted_params
+                address, msg, redis, prev_message=prev_msg, casted_params=casted_params
             )
 
         # save the incoming context if requested

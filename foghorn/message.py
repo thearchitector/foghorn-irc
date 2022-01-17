@@ -77,7 +77,9 @@ class Message:
         # raise an error if we've exceeded the maximum number of bytes
         # for the remaining message
         if len(ATOM_DELIMITER.join(atoms).encode("utf-8")) > MAX_MESSAGE_LENGTH:
-            raise ProtocolException(ErrorCode.ERR_INPUTTOOLONG)
+            raise ProtocolException(
+                ErrorCode.ERR_UNKNOWNERROR, msg=ErrorCode.ERR_INPUTTOOLONG.msg
+            )
 
         # source is optional. if the first atom (or second, depending on the inclusion
         # of tags) begins with ':', extract it

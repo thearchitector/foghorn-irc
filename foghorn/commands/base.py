@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Type, Union
+from typing import Any, Callable, List, Optional, Union
 
 from redis import Redis
 
@@ -9,10 +9,10 @@ from ..message import Message
 from ..typing import Address
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # type: ignore[misc]
 class BaseCommand(ABC):
     # all required parameters and their expected typings
-    required_params: Optional[List[Union[Type, Callable]]] = None
+    required_params: Optional[List[Callable]] = None
     save_context: bool = False
     # the expected preceding and proceeding commands
     required_pre_context: Optional[Union[Command, Callable[[Command], Command]]] = None

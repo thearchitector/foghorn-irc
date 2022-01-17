@@ -32,10 +32,14 @@ class CapCommand(BaseCommand):
             raise ProtocolException(ErrorCode.ERR_NEEDMOREPARAMS)
 
         # ensure valid command
-        if message.params[0] not in CapSubCommand.__members__.keys():
-            raise ProtocolException(ErrorCode.ERR_INVALIDCAPCMD)
+        _command = message.params[0].upper()
+        if _command not in CapSubCommand.__members__.keys():
+            raise ProtocolException(
+                ErrorCode.ERR_INVALIDCAPCMD,
+                params=[ANY_CLIENT, _command],
+            )
         else:
-            command = CapSubCommand[message.params[0].upper()]
+            command = CapSubCommand[_command]
 
         # if the subcommand expects parameters, transform them
         if command.value:
@@ -47,13 +51,8 @@ class CapCommand(BaseCommand):
             # them correctly. an incoming LS or REQ command does not always indicate
             # the beginning of a negotation, as it may have happened already.
             client_key = client_rkey(address)
-            if (
-                redis.hget(client_key, CLIENT_STATUS_RKEY)
-                == ClientStatus.UNREGISTERED.value
-            ):
-                redis.hset(
-                    client_key, CLIENT_STATUS_RKEY, ClientStatus.NEGOTIATING.value
-                )
+            if redis.hget(client_key, CLIENT_STATUS_RKEY) == ClientStatus.UNREGISTERED:
+                redis.hset(client_key, CLIENT_STATUS_RKEY, ClientStatus.NEGOTIATING)
 
             assert casted_params  # calm down mypy
             if command == CapSubCommand.LS:

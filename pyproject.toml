@@ -12,6 +12,7 @@ gevent = {extras = ["dnspython"], version = "^21.1.2"}
 cffi = "^1.14.5"
 redis = "^3.5.3"
 hiredis = "^2.0.0"
+cryptography = "^3.4.7"
 
 # linting deps (dev only)
 black = {version = "^21.5b1", optional = true}

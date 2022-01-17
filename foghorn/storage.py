@@ -3,6 +3,7 @@ from .typing import Address
 CLIENT_STATUS_RKEY = "status"
 CLIENT_CAPS_RKEY = "caps"
 CLIENT_VERSION_RKEY = "version"
+CLIENT_PASS_RKEY = "password"
 
 
 def client_rkey(addr: Address) -> str:
