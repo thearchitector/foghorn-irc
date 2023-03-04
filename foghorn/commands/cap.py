@@ -6,7 +6,7 @@ from redis import Redis
 from ..enums import Capabilities, CapSubCommand, ClientStatus, Command, ErrorCode
 from ..errors import ProtocolException
 from ..message import Message
-from ..parsing import ANY_CLIENT
+from ..parsing import ANY_CLIENT, PARAM_PREFIX, REMOVE_CAP_PREFIX
 from ..storage import (
     CLIENT_CAPS_RKEY,
     CLIENT_STATUS_RKEY,
@@ -49,7 +49,7 @@ class CapCommand(BaseCommand):
         if command == CapSubCommand.LS or command == CapSubCommand.REQ:
             # if the client is unregistered, set their status to ensure we process
             # them correctly. an incoming LS or REQ command does not always indicate
-            # the beginning of a negotation, as it may have happened already.
+            # the beginning of a negotiation, as it may have happened already.
             client_key = client_rkey(address)
             if redis.hget(client_key, CLIENT_STATUS_RKEY) == ClientStatus.UNREGISTERED:
                 redis.hset(client_key, CLIENT_STATUS_RKEY, ClientStatus.NEGOTIATING)
@@ -62,22 +62,57 @@ class CapCommand(BaseCommand):
                 # has indicated a higher version that currently registered
                 if (redis.hget(client_key, CLIENT_VERSION_RKEY) or -1) < version:
                     redis.hset(client_key, CLIENT_VERSION_RKEY, version)
+
+                return Message(
+                    verb=Command.CAP,
+                    params=[
+                        ANY_CLIENT,
+                        CapSubCommand.LS.name,
+                        *[cap.value for cap in Capabilities],
+                    ],
+                )
             elif command == CapSubCommand.REQ:
-                req_caps = casted_params[1:]
+                # if the first parameter doesn't start with the prefix it isn't valid
+                if casted_params[0][0] != PARAM_PREFIX:
+                    raise ProtocolException(ErrorCode.ERR_NEEDMOREPARAMS)
+
+                req_caps = set(casted_params[0][1:] + casted_params[1:])
+                caps_to_add = {cap for cap in req_caps if cap[0] != REMOVE_CAP_PREFIX}
+                caps_to_remove = req_caps - caps_to_add
 
                 # if the client requests a capability we don't offer, including those
-                # with values, reject the entire request
-                if not {*req_caps}.issubset({c.value for c in Capabilities}):
+                # with values, reject the entire request. ensure to strip the removal
+                # prefix from the caps to remove before checking the set inclusion
+                if not (caps_to_add | ({cap[1:] for cap in caps_to_remove})).issubset(
+                    {c.value for c in Capabilities}
+                ):
                     return Message(
                         verb=Command.CAP,
                         params=[ANY_CLIENT, CapSubCommand.NAK.name, *req_caps],
                     )
                 else:
-                    # store client capabilities and accept the request
-                    redis.hset(client_key, CLIENT_CAPS_RKEY, ";".join(req_caps))
+                    # add or remove client capabilities, store them, and accept the
+                    # request
+                    current_caps = set(
+                        (redis.hget(client_key, CLIENT_CAPS_RKEY) or "").split(";")
+                    )
+
+                    # assume deletions take precedence over additions to ensure we
+                    # don't add a capability when it should be removed. this is only
+                    # a problem if a client asks to add and remove the same cap in
+                    # the same message
+                    current_caps.update(caps_to_add)
+                    current_caps.difference_update(caps_to_remove)
+
+                    redis.hset(client_key, CLIENT_CAPS_RKEY, ";".join(current_caps))
                     return Message(
                         verb=Command.CAP,
-                        params=[ANY_CLIENT, CapSubCommand.ACK.name, *req_caps],
+                        params=[ANY_CLIENT, CapSubCommand.ACK.name, *current_caps],
                     )
+        elif command == CapSubCommand.END:
+            # if the client was negotiating, END indicates registration was done and
+            # was successful
+            if redis.hget(client_key, CLIENT_STATUS_RKEY) == ClientStatus.NEGOTIATING:
+                redis.hset(client_key, CLIENT_STATUS_RKEY, ClientStatus.REGISTERED)
 
         return None

@@ -117,7 +117,7 @@ class IRCServer(StreamServer):
 
         with Redis(connection_pool=self._redis_connection_pool) as redis:
             # actually process the incoming message and generate a response
-            response = executor.respond(
+            response: Optional[Message] = executor.respond(
                 address, msg, redis, prev_message=prev_msg, casted_params=casted_params
             )
 

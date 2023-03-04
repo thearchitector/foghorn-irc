@@ -26,7 +26,7 @@ COMMANDS = {
         save_context=True,
         required_post_context=Command.USER,
     ),
-    Command.USER: UserCommand(required_pre_context=Command.NICK),
+    # Command.USER: UserCommand(required_pre_context=Command.NICK),
 }
 
 __all__ = ["COMMANDS"]
