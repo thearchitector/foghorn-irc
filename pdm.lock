@@ -242,7 +242,7 @@ dependencies = [
 
 [metadata]
 lock_version = "4.1"
-content_hash = "sha256:b456515846b3cc043d3aa474ad3300c95a9aa8b42701f6ca9ecd9390eb2bfae8"
+content_hash = "sha256:c5948bb3a9e513dbd40c9c4f742d053950380a50574bd4f1ce8f89d03d74ce81"
 
 [metadata.files]
 "async-timeout 4.0.2" = [

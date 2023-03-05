@@ -8,6 +8,7 @@ authors = [
 dependencies = [
     "typer[all]>=0.7.0",
     "gevent>=22.10.2",
+    "cffi>=1.15.1",
     "redis>=4.5.1",
     "hiredis>=2.2.2",
 ]
