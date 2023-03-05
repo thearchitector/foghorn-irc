@@ -1,0 +1,13 @@
+repos:
+-   repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.254
+    hooks:
+    -   id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        require_serial: true
+-   repo: https://github.com/psf/black
+    # same as the version installed by ms-python.black-formatter
+    rev: 22.10.0
+    hooks:
+    -   id: black
+        language_version: python3.7

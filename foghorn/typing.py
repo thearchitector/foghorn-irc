@@ -15,7 +15,8 @@ def typecaster(t: Type, many=False, optional=False) -> Callable:
     """
     if many and optional:
         raise TypeError(
-            "'many' and 'optional' are mutually exclusive options, and cannot both be set to `True`."
+            "'many' and 'optional' are mutually exclusive options, and cannot both be"
+            " set to `True`."
         )
 
     def _cast(params: List[str], args: Iterator) -> Any:
