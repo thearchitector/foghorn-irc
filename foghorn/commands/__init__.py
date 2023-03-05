@@ -14,6 +14,7 @@ COMMANDS = {
             # Command.PASS,
             Command.NICK,
         ),
+        allow_unregistered=True,
     ),
     # Command.PASS: PassCommand(
     #     required_params=[str],
@@ -25,6 +26,7 @@ COMMANDS = {
         required_params=[typecaster(str, optional=True)],
         save_context=True,
         required_post_context=Command.USER,
+        allow_unregistered=True,
     ),
     # Command.USER: UserCommand(required_pre_context=Command.NICK),
 }

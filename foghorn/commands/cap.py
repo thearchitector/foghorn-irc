@@ -8,12 +8,13 @@ from ..errors import ProtocolException
 from ..message import Message
 from ..parsing import ANY_CLIENT, PARAM_PREFIX, REMOVE_CAP_PREFIX
 from ..storage import (
+    CAP_DELIMITER,
     CLIENT_CAPS_RKEY,
     CLIENT_STATUS_RKEY,
     CLIENT_VERSION_RKEY,
-    client_rkey,
+    STATUS_DELIMITER,
+    get_statuses,
 )
-from ..typing import Address
 from ..utils import transform
 from .base import BaseCommand
 
@@ -22,7 +23,7 @@ from .base import BaseCommand
 class CapCommand(BaseCommand):
     def respond(
         self,
-        address: Address,
+        client_key: str,
         message: Message,
         redis: Redis,
         casted_params: List[Any] = None,
@@ -47,12 +48,18 @@ class CapCommand(BaseCommand):
 
         # initiate capability negotiation
         if command == CapSubCommand.LS or command == CapSubCommand.REQ:
-            # if the client is unregistered, set their status to ensure we process
-            # them correctly. an incoming LS or REQ command does not always indicate
-            # the beginning of a negotiation, as it may have happened already.
-            client_key = client_rkey(address)
-            if redis.hget(client_key, CLIENT_STATUS_RKEY) == ClientStatus.UNREGISTERED:
-                redis.hset(client_key, CLIENT_STATUS_RKEY, ClientStatus.NEGOTIATING)
+            # set the client's status to ensure we process them correctly.
+            # an incoming LS or REQ command does not always indicate
+            # the beginning of a negotiation, as it may have happened already, so
+            # we need to keep track of both the previous and new status
+            # to ensure we set it back correctly when negotiation completes.
+            statuses = get_statuses(redis, client_key)
+            if statuses[0] != ClientStatus.NEGOTIATING:
+                redis.hset(
+                    client_key,
+                    CLIENT_STATUS_RKEY,
+                    ClientStatus.NEGOTIATING + STATUS_DELIMITER + statuses[0],
+                )
 
             assert casted_params  # calm down mypy
             if command == CapSubCommand.LS:
@@ -94,7 +101,9 @@ class CapCommand(BaseCommand):
                     # add or remove client capabilities, store them, and accept the
                     # request
                     current_caps = set(
-                        (redis.hget(client_key, CLIENT_CAPS_RKEY) or "").split(";")
+                        (redis.hget(client_key, CLIENT_CAPS_RKEY) or "").split(
+                            CAP_DELIMITER
+                        )
                     )
 
                     # assume deletions take precedence over additions to ensure we
@@ -104,15 +113,18 @@ class CapCommand(BaseCommand):
                     current_caps.update(caps_to_add)
                     current_caps.difference_update(caps_to_remove)
 
-                    redis.hset(client_key, CLIENT_CAPS_RKEY, ";".join(current_caps))
+                    redis.hset(
+                        client_key, CLIENT_CAPS_RKEY, CAP_DELIMITER.join(current_caps)
+                    )
                     return Message(
                         verb=Command.CAP,
                         params=[ANY_CLIENT, CapSubCommand.ACK.name, *current_caps],
                     )
         elif command == CapSubCommand.END:
-            # if the client was negotiating, END indicates registration was done and
-            # was successful
-            if redis.hget(client_key, CLIENT_STATUS_RKEY) == ClientStatus.NEGOTIATING:
-                redis.hset(client_key, CLIENT_STATUS_RKEY, ClientStatus.REGISTERED)
+            # if the client was negotiating, change their status back to what it was
+            # before
+            statuses = get_statuses(redis, client_key)
+            if statuses[0] == ClientStatus.NEGOTIATING:
+                redis.hset(client_key, CLIENT_STATUS_RKEY, statuses[1])
 
         return None

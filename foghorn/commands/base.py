@@ -6,7 +6,6 @@ from redis import Redis
 
 from ..enums import Command
 from ..message import Message
-from ..typing import Address
 
 
 @dataclass(frozen=True)  # type: ignore[misc]
@@ -17,11 +16,13 @@ class BaseCommand(ABC):
     # the expected preceding and proceeding commands
     required_pre_context: Optional[Union[Command, Callable[[Command], Command]]] = None
     required_post_context: Optional[Union[Command, Callable[[Command], bool]]] = None
+    # if the command can be run by an unregistered client
+    allow_unregistered: bool = False
 
     @abstractmethod
     def respond(
         self,
-        address: Address,
+        client_key: str,
         message: Message,
         redis: Redis,
         casted_params: List[Any] = None,
