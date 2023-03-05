@@ -1,16 +1,19 @@
-from itertools import zip_longest
-from typing import Callable, Dict
+import math
+from typing import Callable, Dict, Optional
 
 from gevent.queue import LifoQueue
 from gevent.server import StreamServer
 from redis import BlockingConnectionPool, Redis
 
 from .commands import COMMANDS
+from .commands.cap import ClientStatus
 from .enums import ErrorCode
 from .errors import ProtocolException
 from .message import Message
 from .parsing import MAX_MESSAGE_LENGTH, MAX_TAGS_LENGTH, MSG_DELIMITER
+from .storage import CLIENT_STATUS_RKEY, client_rkey, get_statuses
 from .typing import Address, Socket
+from .utils import transform
 
 IRC_PORT = 6697
 
@@ -28,17 +31,35 @@ class IRCServer(StreamServer):
     def handle(self, socket: Socket, address: Address) -> None:  # pylint: disable=E0202
         buffer = self._connection_buffer_map.get(address, b"")
 
+        # create an unregistered client for the new address
+        with Redis(connection_pool=self._redis_connection_pool) as redis:
+            redis.hset(
+                client_rkey(address),
+                CLIENT_STATUS_RKEY,
+                ClientStatus.UNREGISTERED.value,
+            )
+
         while True:
             # read messages into the address's buffer until a delimiter is found
             while MSG_DELIMITER not in buffer:
                 # closest power of 2
-                data = socket.recv(
-                    (MAX_MESSAGE_LENGTH + MAX_TAGS_LENGTH - 2).bit_length()
-                )
+                try:
+                    data = socket.recv(
+                        math.ceil(
+                            (MAX_MESSAGE_LENGTH + MAX_TAGS_LENGTH - 2).bit_length() / 8
+                        )
+                    )
+                finally:
+                    # if the socket is closed
+                    if not data:
+                        # delete all traces of the client
+                        with Redis(
+                            connection_pool=self._redis_connection_pool
+                        ) as redis:
+                            client_key = client_rkey(address)
+                            redis.delete(client_key)
 
-                # if the socket is closed
-                if not data:
-                    return
+                        return
 
                 # TODO: read atom sizes for compliance while reading buffer instead
                 # of decoding and re-encoding utf-8
@@ -62,71 +83,63 @@ class IRCServer(StreamServer):
                 continue
             except ProtocolException as err:
                 # if a protocol exception happened, send back the error numeric
-                # resp = err.response
-                pass
+                resp = Message(verb=err.numeric, params=err.params + [err.msg])
 
-            socket.sendall(resp.to_line().encode("utf-8"))
+            # send the response if exists, exhausting the entire bytestream
+            if resp:
+                socket.sendall(resp.to_line().encode("utf-8"))
 
-    def handle_message(self, socket: Socket, address: Address, line: str) -> Message:
+    def _check_context(self, context, verb):
+        # throw an unknown error (since no numeric is standardized) if the order of
+        # the messages is unexpected
+        if context and (
+            (isinstance(context, Callable) and not context(verb)) or context != verb
+        ):
+            raise ProtocolException(ErrorCode.ERR_UNKNOWNERROR)
+
+    def handle_message(
+        self, socket: Socket, address: Address, line: str
+    ) -> Optional[Message]:
         msg = Message.from_line(line)
         executor = COMMANDS[msg.verb]
 
-        # attempt to cast all the given parameters to their expected types. most params
-        # will remain strings and checked downstream, but this will raise any missing
-        # or
-        casted_params = []
-        if executor.required_params:
-            for transformer, given in zip_longest(
-                executor.required_params.values(), msg.params
-            ):
-                # if the transfomer is None, we got more parameters than
-                # we expected
-                if not transformer:
-                    raise ProtocolException(ErrorCode.ERR_UNKNOWNERROR)
+        with Redis(connection_pool=self._redis_connection_pool) as redis:
+            # ensure that the client is registered unless the command allows
+            # them to be unregistered (for commands sent in order to register)
+            client_key = client_rkey(address)
+            if not executor.allow_unregistered and get_statuses(redis, client_key) != [
+                ClientStatus.REGISTERED
+            ]:
+                raise ProtocolException(ErrorCode.ERR_NOTREGISTERED)
 
-                try:
-                    # all types except int and float will cast None to some value,
-                    # which is not the behavior we want
-                    if transformer != int and transformer != float and given is None:
-                        raise TypeError
+            # attempt to cast all the given parameters to their expected types
+            casted_params = (
+                transform(executor.required_params, msg.params)
+                if executor.required_params
+                else None
+            )
 
-                    casted_params.append(transformer(given))
-                except (TypeError, ValueError):
-                    # something went wrong during transformation, so the param was
-                    # super invalid or missing when expected
-                    raise ProtocolException(ErrorCode.ERR_NEEDMOREPARAMS)
+            prev_msg = self._previous_messages.get(address)
+            if prev_msg:
+                del self._previous_messages[address]
+                # check if the preceding command is what the current one expects
+                self._check_context(executor.required_pre_context, prev_msg.verb)
+                # check if the current command is required by the preceding one
+                self._check_context(
+                    COMMANDS[prev_msg.verb].required_post_context, msg.verb
+                )
 
-        def _check_context(context, verb):
-            # throw an unknown error (since no numeric is standardized) if the order of
-            # the messages is unexpected
-            if context and (
-                (isinstance(context, Callable) and not context(verb)) or context != verb
-            ):
-                raise ProtocolException(ErrorCode.ERR_UNKNOWNERROR)
-
-        prev_msg = self._previous_messages.get(address)
-        if prev_msg:
-            del self._previous_messages[address]
-            # check if the preceding command is what the current one expects
-            _check_context(executor.required_pre_context, prev_msg.verb)
-            # check if the current command is required by the preceding one
-            _check_context(COMMANDS[prev_msg.verb].required_post_context, msg.verb)
-
-        # if the executor creates a Redis session (the default unless specified)
-        redis = None
-        if executor.needs_redis:
-            redis = Redis(connection_pool=self._redis_connection_pool)
-
-        # actually process the incoming message and generate a response
-        response = executor.respond(
-            msg,
-            redis=redis,
-            prev_message=prev_msg,
-        )
+            # actually process the incoming message and generate a response
+            response: Optional[Message] = executor.respond(
+                client_key,
+                msg,
+                redis,
+                prev_message=prev_msg,
+                casted_params=casted_params,
+            )
 
         # save the incoming context if requested
         if executor.save_context:
             self._previous_messages[address] = msg
 
-        # send the response, exhausting the entire bytestream
         return response

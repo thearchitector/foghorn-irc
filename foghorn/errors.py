@@ -1,14 +1,20 @@
-from dataclasses import dataclass
+from typing import List, Optional
 
 from .enums import ErrorCode
 
 
-@dataclass(frozen=True)
 class ProtocolException(Exception):
     """Base class for all protocol exceptions."""
 
-    error_code: ErrorCode
+    def __init__(
+        self, error_code: ErrorCode, params: Optional[List[str]] = None, msg: str = None
+    ):
+        self.error_code = error_code
+        self.numeric = self.error_code.numeric
+        self.params = params or []
+        self.msg = msg or self.error_code.msg
 
-    @property
-    def value(self):
-        return self.error_code.value
+        if not msg:
+            raise TypeError(
+                "The given error has no default message, so one must be provided."
+            )

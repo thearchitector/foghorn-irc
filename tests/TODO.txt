@@ -1,0 +1,22 @@
+=== TESTS
+
+--> ✅ make sure messages are decoded correctly
+--> ✅ make sure type casing works for expected parameters
+
+--> make sure connections remain open until closed by client
+--> make sure connection buffers and redis keys are cleared when client disconnects
+--> make sure incoming message buffering works
+--> check UTF8 encoding failure is caught and handled properly
+--> check if command context works (previous and after CMD)
+
+--> check CAP negotiation
+    * client CAP status is set correctly
+    * LS responds with the list of CAPS
+    * REQ rejects if an invalid CAP is requested
+    * REQ updates valid client caps (additions and deletions)
+    * CAP negotiation requires registration after REQ if unregistered
+    * CAP negotiation restores the status of the client correctly
+        - UNREGISTERED --> NEGOTIATING --> REGISTERED
+        - REGISTERED --> NEGOTIATING --> REGISTERED
+    * non-CAP commands are rejected if the client is NEGOTIATING (unless NICK/USER)
+

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, List, Optional, Union
 
 from redis import Redis
 
@@ -8,24 +8,30 @@ from ..enums import Command
 from ..message import Message
 
 
-# mypy: ignore_errors
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # type: ignore[misc]
 class BaseCommand(ABC):
-    needs_redis: bool = True
     # all required parameters and their expected typings
-    required_params: Optional[Dict[str, Union[Type, Callable[Type]]]] = None
-    # the expected preceding and proceeding commands
+    required_params: Optional[List[Callable]] = None
     save_context: bool = False
+    # the expected preceding and proceeding commands
     required_pre_context: Optional[Union[Command, Callable[[Command], Command]]] = None
     required_post_context: Optional[Union[Command, Callable[[Command], bool]]] = None
+    # if the command can be run by an unregistered client
+    allow_unregistered: bool = False
 
     @abstractmethod
     def respond(
-        self, message: Message, redis: Redis = None, prev_message: Message = None
-    ) -> Message:
+        self,
+        client_key: str,
+        message: Message,
+        redis: Redis,
+        casted_params: List[Any] = None,
+        prev_message: Message = None,
+    ) -> Optional[Message]:
         """
-        Responds to the provided message, optionally storing correlated information
-        in the given Redis session. Each Redis session is isolated within the specific
-        response context, which runs under a unique greenlet for every incoming packet.
+        Optionally responds to the provided message, optionally storing correlated
+        information in the given Redis session. Each Redis session is isolated within
+        the specific response context, which runs under a unique greenlet for every
+        incoming packet.
         """
         raise NotImplementedError()
