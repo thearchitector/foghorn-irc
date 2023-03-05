@@ -1,5 +1,7 @@
 # environment settings
 .vscode
+.pdm.toml
+__pypackages__/
 
 # caches
 .venv

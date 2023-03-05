@@ -1,6 +1,0 @@
-*
-!.dockerignore
-!foghorn
-!tests
-!poetry.lock
-!pyproject.toml

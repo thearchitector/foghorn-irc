@@ -1,4 +1,4 @@
-=== TESTS
+=== TESTS TO WRITE
 
 --> ✅ make sure messages are decoded correctly
 --> ✅ make sure type casing works for expected parameters
@@ -19,4 +19,3 @@
         - UNREGISTERED --> NEGOTIATING --> REGISTERED
         - REGISTERED --> NEGOTIATING --> REGISTERED
     * non-CAP commands are rejected if the client is NEGOTIATING (unless NICK/USER)
-
