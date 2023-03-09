@@ -39,7 +39,7 @@ jobs:
       - name: Run tests
         run: pdm run pytest --cov=foghorn --cov-branch --cov-report=xml
       - name: Upload coverage metric
-        if: ${{ matrix.os == "ubuntu-latest" && matrix.python-version == "3.7" }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '3.7' }}
         run: |
           # pull the 2 digits after the 0. on the second line of the xml (overall score)
           export metric=$(\
