@@ -25,6 +25,8 @@ jobs:
       matrix:
         python-version: [3.7, 3.8, 3.9, "3.10", "3.11"]
         os: [ubuntu-latest, macOS-latest, windows-latest]
+      env:
+        authkey: ${{ secrets.OPENENDPOINT_CODECOV }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up PDM
@@ -35,4 +37,15 @@ jobs:
       - name: Install dependencies
         run: pdm sync -d
       - name: Run tests
-        run: pdm run pytest
+        run: pdm run pytest --cov=foghorn --cov-branch --cov-report=xml
+      - name: Upload coverage metric
+        if: ${{ matrix.os == "ubuntu-latest" && matrix.python-version == "3.7" }}
+        run: |
+          # pull the 2 digits after the 0. on the second line of the xml (overall score)
+          export metric=$(\
+            sed -nr '2,2s/.*line-rate="0.([[:digit:]]{2}).*/\1/p' coverage.xml)
+          # upload to openendpoint.tools
+          curl \
+            -H "Content-Type: application/json" \
+            -d "{\"slug\":\"foghornirc\",\"metric\":$metric,\"authkey\":\"$authkey\"}" \
+            https://openendpoint.tools/metrics/generic

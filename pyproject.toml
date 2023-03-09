@@ -24,11 +24,11 @@ foghorn = "foghorn.cli:app"
 dev = [
     "pytest>=7.2.2",
     "irc-parser-tests>=0.0.4",
+    "pytest-cov>=4.0.0",
 ]
 
 [tool.pytest.ini_options]
-addopts = "-ra -v"
-asyncio_mode="auto"
+addopts = "-ra -vvv"
 testpaths = [
     "tests"
 ]

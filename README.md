@@ -1,6 +1,7 @@
 # foghorn-irc
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/thearchitector/foghorn-irc/ci.yaml?label=tests&style=flat-square)
+![testing status](https://img.shields.io/github/actions/workflow/status/thearchitector/foghorn-irc/ci.yaml?label=tests&style=flat-square)
+![code coverage](https://img.shields.io/endpoint?color=lightblue&label=code%20coverage&style=flat-square&url=https%3A%2F%2Fopenendpoint.tools%2Fmetrics%2Fgeneric%2Ffoghornirc)
 
 A fully-compliant IRCv3 (<https://ircv3.net/>) server written referencing Modern IRC (<https://modern.ircdocs.horse/index.html>).
 
